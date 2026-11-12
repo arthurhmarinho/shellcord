@@ -19,3 +19,5 @@ Para mudar uma decisão, crie um ADR novo que substitua o antigo e marque o anti
 | 0009 | [Transporte de eventos por datagrama Unix](0009-transporte-de-eventos-datagrama.md) | Aceito |
 | 0010 | [Detecção de fonte morta por PID e starttime](0010-deteccao-de-fonte-morta.md) | Aceito |
 | 0011 | [Agregação de fontes de mesma prioridade](0011-agregacao-de-fontes.md) | Aceito |
+| 0012 | [Caminho completo no evento, redução no daemon](0012-cwd-completo-reducao-no-daemon.md) | Aceito |
+| 0013 | [Client ID da aplicação embutido no binário](0013-client-id-embutido.md) | Aceito |

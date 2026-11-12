@@ -38,3 +38,11 @@ hook do fish ou do Claude Code, não consegue manter a presença. Além disso, d
   um envio sem esperar resposta ou um cliente separado e mínimo.
 - Se surgir uma terceira fonte de eventos que não consiga executar um binário (ex.:
   extensão de navegador).
+
+## Medições
+
+- 2026-11-12, fase 2, loop de 300 chamadas no zsh com CPU em `powersave`:
+  `shellcord send` leva 3,5 a 3,7 ms, contra 2,2 ms de um binário Go vazio e de
+  `/bin/true`. O custo próprio é de uns 1,4 ms. Na primeira rodada, com a CPU fria,
+  tudo levou de 3 a 4 vezes mais (`send` chegou a 10,5 ms). Repetir a medição dentro do
+  fish na fase 4.
