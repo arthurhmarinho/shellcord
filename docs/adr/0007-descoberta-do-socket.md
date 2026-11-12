@@ -15,7 +15,8 @@ O que foi verificado em 2026-11-11, com o Discord 1.0.159 aberto:
 - Esse socket é criado pelo wrapper do Flatpak, que roda
   `socat UNIX-LISTEN:<app>/discord-ipc-0,forever,fork UNIX-CONNECT:/run/user/1000/discord-ipc-0`
   dentro da sandbox. Ou seja, há um proxy entre nós e o Discord.
-- O handshake e o `SET_ACTIVITY` funcionam por esse caminho (teste da fase 1).
+- O handshake e o `SET_ACTIVITY` funcionam por esse caminho, e o card aparece no perfil
+  (teste da fase 1, confirmado visualmente em 2026-11-12).
 
 ## Decisão
 

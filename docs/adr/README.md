@@ -16,3 +16,6 @@ Para mudar uma decisão, crie um ADR novo que substitua o antigo e marque o anti
 | 0006 | [Arranque do daemon: sway e autoarranque pelo cliente](0006-arranque-do-daemon.md) | Aceito |
 | 0007 | [Descoberta do socket do Discord, inclusive Flatpak](0007-descoberta-do-socket.md) | Aceito |
 | 0008 | [Testes exploratórios fora do repositório](0008-testes-fora-do-repositorio.md) | Aceito |
+| 0009 | [Transporte de eventos por datagrama Unix](0009-transporte-de-eventos-datagrama.md) | Aceito |
+| 0010 | [Detecção de fonte morta por PID e starttime](0010-deteccao-de-fonte-morta.md) | Aceito |
+| 0011 | [Agregação de fontes de mesma prioridade](0011-agregacao-de-fontes.md) | Aceito |
