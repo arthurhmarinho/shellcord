@@ -46,8 +46,8 @@ Quando o Claude Code está trabalhando, ele passa na frente:
 └─────────────────────────────────────────────┘
 ```
 
-E quando você vai tomar café, ele some sozinho. O Discord não precisa saber que você
-deixou um `htop` aberto por quatro horas.
+E quando você vai tomar café, ele some sozinho: com o terminal parado no prompt por
+alguns minutos, o card sai do perfil.
 
 ## Como funciona
 
@@ -78,7 +78,7 @@ shell vive alguns milissegundos. Por isso o shellcord tem duas partes no mesmo b
   | 1 | Claude Code trabalhando | *Claude Code editando arquivos* |
   | 2 | Comando rodando no terminal | *rodando cargo* |
   | 3 | Shell parado | *no terminal* |
-  | 4 | Nada há N minutos | *(card some)* |
+  | 4 | Shell parado há N minutos | *(card some)* |
 
 ## Privacidade, antes de tudo
 
@@ -104,7 +104,7 @@ allow = ["nvim", "cargo", "go", "git", "make", "htop"]
 # Pastas que nunca aparecem (nem o nome, nem nada dentro delas).
 ignore_dirs = ["~/Documentos/financeiro", "~/clientes"]
 
-# Minutos sem nenhum evento até o card sumir.
+# Minutos com o shell parado no prompt até o card sumir.
 idle_minutes = 10
 ```
 
@@ -125,8 +125,8 @@ O projeto está no começo. Por fase:
 
 - [x] **Fase 1:** prova de conceito. Handshake e `SET_ACTIVITY` pelo socket do Flatpak,
       com o card aparecendo no perfil.
-- [ ] **Fase 2:** daemon, com socket local, prioridade, espera de 15 s, reconexão e
-      limpeza por inatividade.
+- [x] **Fase 2:** daemon, com socket local, prioridade, espera de 15 s, reconexão e
+      limpeza por inatividade. Já dá para mandar eventos à mão com `shellcord send`.
 - [ ] **Fase 3:** hooks do Claude Code, com várias sessões ao mesmo tempo.
 - [ ] **Fase 4:** integração com o fish.
 - [ ] **Fase 5:** config TOML com allowlist e pastas ignoradas.
@@ -148,10 +148,10 @@ estiver rodando):
 exec shellcord daemon
 ```
 
-Você também vai precisar de uma aplicação no
-[Discord Developer Portal](https://discord.com/developers/applications). O nome dela é
-o que aparece depois de "Jogando", e o **Application ID** dela vai na config. Não é
-segredo: o próprio Discord mostra esse ID publicamente.
+Não precisa criar nada no Discord Developer Portal: o binário já vem com o
+**Application ID** da aplicação "shellcord", que é o nome que aparece depois de
+"Jogando". Esse ID não é segredo, o próprio Discord o mostra publicamente. Para usar
+uma aplicação sua, com outro nome no card, defina `SHELLCORD_CLIENT_ID`.
 
 ## Perguntas que alguém vai fazer
 

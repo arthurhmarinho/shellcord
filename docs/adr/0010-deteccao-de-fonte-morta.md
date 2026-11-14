@@ -10,7 +10,12 @@ Claude Code morto. Sem detecção, o card fica preso em "trabalhando".
 
 O que foi verificado em 2026-11-12, com o Claude Code 2.1.322: um processo disparado
 pelo Claude Code tem como ancestral um processo com `comm` igual a `claude`, a um nível
-(`zsh -c ...` é filho do `claude`). A cadeia dos hooks ainda não foi verificada.
+(`zsh -c ...` é filho do `claude`).
+
+Verificado em 2026-11-14 (fase 3), com uma sessão `claude -p --settings <arquivo>`:
+os 6 hooks disparados (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop,
+SessionEnd) rodam como `hook → sh → claude`, ou seja, o `claude` fica 2 níveis acima do
+processo do hook.
 
 ## Decisão
 
