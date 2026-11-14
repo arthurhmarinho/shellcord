@@ -23,6 +23,10 @@ func fish(pid int, kind event.Kind, prog, cwd string) event.Event {
 	return event.Event{V: 1, Src: event.SourceFish, PID: pid, Kind: kind, Prog: prog, Cwd: cwd}
 }
 
+func claudeTool(id, tool string) event.Event {
+	return event.Event{V: 1, Src: event.SourceClaude, ID: id, Kind: event.KindBusy, Tool: tool, Cwd: "/p"}
+}
+
 func claude(id string, pid int, kind event.Kind, cwd string) event.Event {
 	return event.Event{V: 1, Src: event.SourceClaude, ID: id, PID: pid, Kind: kind, Cwd: cwd}
 }
@@ -49,10 +53,47 @@ func TestPriority(t *testing.T) {
 	}
 	s.Apply(claude("s1", 0, event.KindIdle, ""), at(6))
 	if got := s.Summary(at(7)); got.Level != LevelShellExec {
-		t.Fatalf("Claude parado não aparece, volta para o comando: %+v", got)
+		t.Fatalf("comando rodando fica acima do Claude esperando: %+v", got)
 	}
-	if s.Len() != 3 {
-		t.Fatalf("Claude parado continua registrado: len=%d", s.Len())
+	s.Apply(fish(2, event.KindIdle, "", "/b"), at(8))
+	if got := s.Summary(at(9)); got.Level != LevelClaudeIdle || got.Cwd != "/c" {
+		t.Fatalf("Claude esperando fica acima do shell parado: %+v", got)
+	}
+}
+
+func TestFishRunningClaudeIsIgnored(t *testing.T) {
+	s := newStore(nil)
+	s.Apply(fish(1, event.KindExec, "claude", "/p"), at(0))
+	if got := s.Summary(at(1)); got.Level != LevelNone {
+		t.Fatalf("o fish rodando claude não deveria aparecer: %+v", got)
+	}
+	s.Apply(claude("s", 0, event.KindIdle, "/p"), at(1))
+	if got := s.Summary(at(2)); got.Level != LevelClaudeIdle {
+		t.Fatalf("quem representa o terminal é a fonte do Claude: %+v", got)
+	}
+}
+
+func TestToolChangesKeepTimer(t *testing.T) {
+	s := newStore(nil)
+	s.Apply(claudeTool("s", ""), at(0))
+	s.Apply(claudeTool("s", "Read"), at(5))
+	s.Apply(claudeTool("s", "Edit"), at(10))
+	got := s.Summary(at(11))
+	if got.Tool != "Edit" || !got.Since.Equal(at(0)) {
+		t.Fatalf("quero a ferramenta mais recente sem reiniciar o cronômetro: %+v", got)
+	}
+	s.Apply(claude("s", 0, event.KindIdle, ""), at(12))
+	s.Apply(claudeTool("s", "Bash"), at(20))
+	if got := s.Summary(at(21)); !got.Since.Equal(at(20)) {
+		t.Fatalf("um prompt novo depois de esperar reinicia o cronômetro: %+v", got)
+	}
+}
+
+func TestClaudeIdleTimeout(t *testing.T) {
+	s := newStore(nil)
+	s.Apply(claude("s", 0, event.KindIdle, "/p"), at(0))
+	if got := s.Summary(at(11 * 60)); got.Level != LevelNone {
+		t.Fatalf("Claude esperando demais deveria sumir: %+v", got)
 	}
 }
 

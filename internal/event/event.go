@@ -43,6 +43,7 @@ type Event struct {
 	Start uint64 `json:"start,omitempty"` // starttime desse processo, em ticks desde o boot
 	Kind  Kind   `json:"kind"`
 	Prog  string `json:"prog,omitempty"` // só o nome do programa, nunca argumentos (ADR-0005)
+	Tool  string `json:"tool,omitempty"` // claude: tool_name em uso; o daemon traduz (ADR-0015)
 	Cwd   string `json:"cwd,omitempty"`  // caminho completo; o daemon reduz (ADR-0012)
 }
 
@@ -81,8 +82,14 @@ func (e Event) Validate() error {
 		default:
 			return fmt.Errorf("claude: tipo %q inválido", e.Kind)
 		}
+		if e.Tool != "" && e.Kind != KindBusy {
+			return errors.New("claude: tool só faz sentido com busy")
+		}
 	default:
 		return fmt.Errorf("fonte %q desconhecida", e.Src)
+	}
+	if e.Src != SourceClaude && e.Tool != "" {
+		return errors.New("tool só existe para o claude")
 	}
 	if e.Prog != ProgName(e.Prog) {
 		return errors.New("prog deve ser só o nome do programa")

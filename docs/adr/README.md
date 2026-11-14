@@ -11,7 +11,7 @@ Para mudar uma decisão, crie um ADR novo que substitua o antigo e marque o anti
 | 0001 | [Go e protocolo IPC do Discord escrito à mão](0001-go-e-ipc-a-mao.md) | Aceito |
 | 0002 | [Daemon residente e cliente curto no mesmo binário](0002-daemon-e-cliente.md) | Aceito |
 | 0003 | [Coalescência, reconexão e limpeza por inatividade](0003-coalescencia-reconexao-inatividade.md) | Aceito |
-| 0004 | [Prioridade das fontes de presença](0004-prioridade-das-fontes.md) | Aceito |
+| 0004 | [Prioridade das fontes de presença](0004-prioridade-das-fontes.md) | Substituído por 0016 |
 | 0005 | [Privacidade por padrão e config em TOML](0005-privacidade-e-config-toml.md) | Aceito |
 | 0006 | [Arranque do daemon: sway e autoarranque pelo cliente](0006-arranque-do-daemon.md) | Aceito |
 | 0007 | [Descoberta do socket do Discord, inclusive Flatpak](0007-descoberta-do-socket.md) | Aceito |
@@ -21,3 +21,6 @@ Para mudar uma decisão, crie um ADR novo que substitua o antigo e marque o anti
 | 0011 | [Agregação de fontes de mesma prioridade](0011-agregacao-de-fontes.md) | Aceito |
 | 0012 | [Caminho completo no evento, redução no daemon](0012-cwd-completo-reducao-no-daemon.md) | Aceito |
 | 0013 | [Client ID da aplicação embutido no binário](0013-client-id-embutido.md) | Aceito |
+| 0014 | [Subcomando `shellcord hook claude`](0014-hook-do-claude-code.md) | Aceito |
+| 0015 | [Verbo derivado da ferramenta do Claude Code](0015-verbo-pela-ferramenta.md) | Aceito |
+| 0016 | [Nível "Claude Code esperando você"](0016-nivel-claude-esperando.md) | Aceito |

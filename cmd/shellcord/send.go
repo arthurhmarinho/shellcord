@@ -25,6 +25,7 @@ func runSend(args []string) error {
 	prog := fs.String("prog", "", "linha de comando; só o nome do programa é enviado")
 	cwd := fs.String("cwd", "", "pasta da fonte (padrão: a atual)")
 	id := fs.String("id", "", "session_id do Claude Code")
+	tool := fs.String("tool", "", "tool_name em uso pelo Claude Code (com -kind busy)")
 	pid := fs.Int("pid", 0, "PID da fonte (padrão: fish = processo pai; claude = ancestral \"claude\")")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -32,7 +33,7 @@ func runSend(args []string) error {
 
 	e := event.Event{
 		V: event.Version, Src: event.Source(*src), Kind: event.Kind(*kind),
-		ID: *id, Prog: event.ProgName(*prog), Cwd: *cwd,
+		ID: *id, Prog: event.ProgName(*prog), Tool: *tool, Cwd: *cwd,
 	}
 	if e.Cwd == "" {
 		e.Cwd, _ = os.Getwd()

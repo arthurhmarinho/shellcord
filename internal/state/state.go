@@ -14,11 +14,16 @@ import (
 type Level int
 
 const (
-	LevelNone       Level = iota // não aparece (ex.: Claude Code parado)
+	LevelNone       Level = iota // não aparece
 	LevelShellIdle               // shell parado no prompt
+	LevelClaudeIdle              // Claude Code aberto, esperando você (ADR-0016)
 	LevelShellExec               // comando rodando no terminal
 	LevelClaudeBusy              // Claude Code trabalhando
 )
+
+// claudeProg é o programa que o fish reporta ao abrir o Claude Code. Essa fonte
+// do fish é ignorada: a fonte do próprio Claude Code representa o terminal.
+const claudeProg = "claude"
 
 // Options configura o Store.
 type Options struct {
@@ -35,6 +40,7 @@ type Summary struct {
 	Level Level
 	Count int       // fontes no nível exibido
 	Prog  string    // da fonte mais antiga do nível
+	Tool  string    // da fonte mais antiga do nível (só Claude Code trabalhando)
 	Cwd   string    // da fonte mais antiga do nível
 	Since time.Time // desde quando a fonte mais antiga está nesse nível
 }
@@ -45,6 +51,7 @@ type source struct {
 	start uint64
 	level Level
 	prog  string
+	tool  string
 	cwd   string
 	since time.Time // quando entrou no nível atual
 	seen  time.Time // último evento
@@ -82,27 +89,33 @@ func (s *Store) Apply(e event.Event, now time.Time) {
 	}
 	level := levelOf(e)
 	// Um comando novo no fish reinicia o cronômetro. Nos outros casos, ele só
-	// reinicia quando o nível muda: várias ferramentas seguidas do Claude Code
-	// são o mesmo "trabalhando".
+	// reinicia quando o nível muda: trocar de ferramenta no Claude Code continua
+	// sendo o mesmo "trabalhando".
 	if !ok || level != src.level || e.Kind == event.KindExec {
 		src.since = now
 	}
 	src.level = level
-	src.prog = e.Prog
+	src.prog, src.tool = e.Prog, e.Tool
 }
 
 func levelOf(e event.Event) Level {
 	switch {
+	case e.Src == event.SourceFish && e.Kind == event.KindExec && e.Prog == claudeProg:
+		return LevelNone
 	case e.Src == event.SourceFish && e.Kind == event.KindExec:
 		return LevelShellExec
 	case e.Src == event.SourceFish && e.Kind == event.KindIdle:
 		return LevelShellIdle
 	case e.Src == event.SourceClaude && e.Kind == event.KindBusy:
 		return LevelClaudeBusy
+	case e.Src == event.SourceClaude && e.Kind == event.KindIdle:
+		return LevelClaudeIdle
 	}
-	// Claude Code parado: a fonte continua registrada, mas não aparece.
 	return LevelNone
 }
+
+// waiting diz se o nível é de espera, sujeito ao limite de inatividade.
+func waiting(lv Level) bool { return lv == LevelShellIdle || lv == LevelClaudeIdle }
 
 // Prune remove fontes mortas: com PID, quando o processo morreu; sem PID,
 // quando passam do TTL sem eventos.
@@ -127,7 +140,7 @@ func (s *Store) Summary(now time.Time) Summary {
 	var oldest *source
 	for _, src := range s.sources {
 		lv := src.level
-		if lv == LevelShellIdle && s.opt.IdleTimeout > 0 && now.Sub(src.since) > s.opt.IdleTimeout {
+		if waiting(lv) && s.opt.IdleTimeout > 0 && now.Sub(src.since) > s.opt.IdleTimeout {
 			lv = LevelNone
 		}
 		if lv == LevelNone || lv < sum.Level {
@@ -144,7 +157,7 @@ func (s *Store) Summary(now time.Time) Summary {
 		}
 	}
 	if oldest != nil {
-		sum.Prog, sum.Cwd, sum.Since = oldest.prog, oldest.cwd, oldest.since
+		sum.Prog, sum.Tool, sum.Cwd, sum.Since = oldest.prog, oldest.tool, oldest.cwd, oldest.since
 	}
 	return sum
 }

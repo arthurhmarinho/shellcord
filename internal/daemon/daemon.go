@@ -232,6 +232,11 @@ func (l *loop) flush(now time.Time) {
 		return
 	}
 	l.sent, l.sentValid, l.lastSend = want, true, now
+	if want == nil {
+		l.cfg.Log.Print("card: limpo")
+	} else {
+		l.cfg.Log.Printf("card: %q / %q", want.Details, want.State)
+	}
 }
 
 // connect garante uma conexão, com backoff entre tentativas falhas.

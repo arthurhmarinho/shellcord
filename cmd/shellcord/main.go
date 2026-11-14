@@ -22,6 +22,7 @@ const usage = `uso: shellcord <comando> [opções]
 comandos:
   daemon   mantém a conexão com o Discord e publica a presença
   send     manda um evento ao daemon (sobe o daemon se precisar)
+  hook     usado pelos hooks do Claude Code: "shellcord hook claude"
 
 Use "shellcord <comando> -h" para ver as opções.
 `
@@ -37,6 +38,8 @@ func main() {
 		err = runDaemon(os.Args[2:])
 	case "send":
 		err = runSend(os.Args[2:])
+	case "hook":
+		runHook(os.Args[2:]) // nunca retorna: sai sempre com 0
 	case "-h", "--help", "help":
 		fmt.Print(usage)
 		return

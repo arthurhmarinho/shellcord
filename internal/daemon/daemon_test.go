@@ -24,6 +24,10 @@ func TestRender(t *testing.T) {
 	}{
 		{state.Summary{Level: state.LevelClaudeBusy, Count: 1, Cwd: "/h/proj", Since: since}, "Claude Code trabalhando", "em proj"},
 		{state.Summary{Level: state.LevelClaudeBusy, Count: 2, Cwd: "/h/proj", Since: since}, "Claude Code trabalhando · 2 sessões", "em proj"},
+		{state.Summary{Level: state.LevelClaudeBusy, Count: 1, Tool: "Edit", Cwd: "/h/proj", Since: since}, "Claude Code editando arquivos", "em proj"},
+		{state.Summary{Level: state.LevelClaudeBusy, Count: 1, Tool: "Bash", Since: since}, "Claude Code rodando comandos", ""},
+		{state.Summary{Level: state.LevelClaudeBusy, Count: 1, Tool: "mcp__gmail__send", Since: since}, "Claude Code trabalhando", ""},
+		{state.Summary{Level: state.LevelClaudeIdle, Count: 2, Cwd: "/h/proj", Since: since}, "Claude Code esperando você · 2 sessões", "em proj"},
 		{state.Summary{Level: state.LevelShellExec, Count: 1, Prog: "nvim", Cwd: "/h", Since: since}, "Rodando nvim", "em ~"},
 		{state.Summary{Level: state.LevelShellExec, Count: 1, Prog: "segredo", Cwd: "/h/x/", Since: since}, "No terminal", "em x"},
 		{state.Summary{Level: state.LevelShellIdle, Count: 3, Since: since}, "No terminal · 3 terminais", ""},

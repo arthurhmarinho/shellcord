@@ -42,6 +42,8 @@ func TestValidateRejects(t *testing.T) {
 		{V: 1, Src: SourceFish, PID: 1, Kind: KindExec, Prog: "git push"}, // argumentos
 		{V: 1, Src: SourceClaude, Kind: KindBusy},                         // sem session_id
 		{V: 1, Src: SourceClaude, ID: "s", Kind: KindExec},                // tipo do fish
+		{V: 1, Src: SourceClaude, ID: "s", Kind: KindIdle, Tool: "Bash"},  // tool sem busy
+		{V: 1, Src: SourceFish, PID: 1, Kind: KindExec, Prog: "x", Tool: "Bash"},
 	}
 	for _, e := range bad {
 		if e.Validate() == nil {

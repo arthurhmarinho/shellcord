@@ -1,6 +1,6 @@
 # ADR-0004: Prioridade das fontes de presença
 
-- Status: Aceito
+- Status: Substituído por ADR-0016
 - Data: 2026-11-11
 
 ## Contexto

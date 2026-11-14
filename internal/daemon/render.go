@@ -18,6 +18,24 @@ var defaultAllow = map[string]bool{
 	"docker": true, "htop": true, "btop": true, "man": true,
 }
 
+// claudeVerbs traduz o tool_name do Claude Code no que aparece no card
+// (ADR-0015). Ferramentas fora da tabela, inclusive as de MCP, viram
+// "trabalhando": o nome delas nunca chega ao Discord.
+var claudeVerbs = map[string]string{
+	"Edit": "editando arquivos", "MultiEdit": "editando arquivos",
+	"Write": "editando arquivos", "NotebookEdit": "editando arquivos",
+	"Read": "lendo código", "Grep": "lendo código", "Glob": "lendo código",
+	"Bash":     "rodando comandos",
+	"WebFetch": "pesquisando na web", "WebSearch": "pesquisando na web",
+}
+
+func claudeVerb(tool string) string {
+	if v, ok := claudeVerbs[tool]; ok {
+		return v
+	}
+	return "trabalhando"
+}
+
 // maxField é o limite do Discord para details e state.
 const maxField = 128
 
@@ -27,7 +45,9 @@ func render(s state.Summary, home string, allow map[string]bool) *discord.Activi
 	var details, unit string
 	switch s.Level {
 	case state.LevelClaudeBusy:
-		details, unit = "Claude Code trabalhando", "sessões"
+		details, unit = "Claude Code "+claudeVerb(s.Tool), "sessões"
+	case state.LevelClaudeIdle:
+		details, unit = "Claude Code esperando você", "sessões"
 	case state.LevelShellExec:
 		// Um programa fora da allowlist fica igual ao shell parado, para não
 		// revelar nem que existe algo diferente rodando.

@@ -77,8 +77,9 @@ shell vive alguns milissegundos. Por isso o shellcord tem duas partes no mesmo b
   |---|---|---|
   | 1 | Claude Code trabalhando | *Claude Code editando arquivos* |
   | 2 | Comando rodando no terminal | *rodando cargo* |
-  | 3 | Shell parado | *no terminal* |
-  | 4 | Shell parado há N minutos | *(card some)* |
+  | 3 | Claude Code esperando você | *Claude Code esperando você* |
+  | 4 | Shell parado | *no terminal* |
+  | 5 | Parado há N minutos | *(card some)* |
 
 ## Privacidade, antes de tudo
 
@@ -127,7 +128,8 @@ O projeto está no começo. Por fase:
       com o card aparecendo no perfil.
 - [x] **Fase 2:** daemon, com socket local, prioridade, espera de 15 s, reconexão e
       limpeza por inatividade. Já dá para mandar eventos à mão com `shellcord send`.
-- [ ] **Fase 3:** hooks do Claude Code, com várias sessões ao mesmo tempo.
+- [x] **Fase 3:** hooks do Claude Code, com várias sessões ao mesmo tempo
+      (`shellcord hook claude`).
 - [ ] **Fase 4:** integração com o fish.
 - [ ] **Fase 5:** config TOML com allowlist e pastas ignoradas.
 - [ ] **Fase 6:** `exec` no sway, script de instalação e um `shellcord doctor`.
