@@ -22,6 +22,7 @@ type Source string
 const (
 	SourceFish   Source = "fish"
 	SourceClaude Source = "claude"
+	SourceSystem Source = "system" // ausência do usuário, via swayidle (ADR-0019)
 )
 
 // Kind é o tipo do evento.
@@ -32,6 +33,8 @@ const (
 	KindIdle Kind = "idle" // fish: o prompt voltou; claude: parou de trabalhar
 	KindBusy Kind = "busy" // claude: trabalhando
 	KindEnd  Kind = "end"  // a fonte encerrou
+	KindAway Kind = "away" // system: o usuário saiu (sem teclado nem mouse)
+	KindBack Kind = "back" // system: o usuário voltou
 )
 
 // Event é um evento de uma fonte.
@@ -49,8 +52,11 @@ type Event struct {
 
 // Key identifica a fonte no estado do daemon.
 func (e Event) Key() string {
-	if e.Src == SourceClaude {
+	switch e.Src {
+	case SourceClaude:
 		return "claude:" + e.ID
+	case SourceSystem:
+		return "system"
 	}
 	return fmt.Sprintf("fish:%d", e.PID)
 }
@@ -85,6 +91,13 @@ func (e Event) Validate() error {
 		if e.Tool != "" && e.Kind != KindBusy {
 			return errors.New("claude: tool só faz sentido com busy")
 		}
+	case SourceSystem:
+		if e.Kind != KindAway && e.Kind != KindBack {
+			return fmt.Errorf("system: tipo %q inválido", e.Kind)
+		}
+		if e.Prog != "" || e.Cwd != "" {
+			return errors.New("system: evento não leva prog nem cwd")
+		}
 	default:
 		return fmt.Errorf("fonte %q desconhecida", e.Src)
 	}
@@ -97,14 +110,66 @@ func (e Event) Validate() error {
 	return nil
 }
 
-// ProgName reduz uma linha de comando ao nome do programa: a primeira palavra,
-// sem o caminho. Os argumentos são descartados (ADR-0005).
+// wrappers são comandos que só embrulham outro (ADR-0018). O valor lista as
+// opções de uma letra que consomem a palavra seguinte (ex.: "sudo -u root").
+var wrappers = map[string]string{
+	"sudo": "ugpCDhrtU", "doas": "uC", "env": "uCS", "time": "fo", "nice": "n",
+	"command": "", "builtin": "", "exec": "", "nohup": "",
+}
+
+// ProgName reduz uma linha de comando ao nome do programa: pula atribuições
+// (VAR=valor) e wrappers com as opções deles, e fica com a primeira palavra
+// que sobra, sem o caminho. Os argumentos são descartados (ADR-0005). Se só
+// houver wrappers, devolve o último; se só houver atribuições, devolve "".
 func ProgName(cmdline string) string {
 	f := strings.Fields(cmdline)
-	if len(f) == 0 {
-		return ""
+	last := ""
+	for i := 0; i < len(f); {
+		if isAssign(f[i]) {
+			i++
+			continue
+		}
+		name := progBase(f[i])
+		valued, ok := wrappers[name]
+		if !ok {
+			return name
+		}
+		last = name
+		i++
+		for i < len(f) {
+			a := f[i]
+			if a == "--" {
+				i++
+				break
+			}
+			if len(a) < 2 || a[0] != '-' {
+				break
+			}
+			i++
+			if len(a) == 2 && strings.IndexByte(valued, a[1]) >= 0 {
+				i++ // a opção leva o valor na palavra seguinte
+			}
+		}
 	}
-	return filepath.Base(f[0])
+	return last
+}
+
+func progBase(word string) string {
+	return filepath.Base(strings.TrimRight(word, ";&|"))
+}
+
+// isAssign diz se a palavra é uma atribuição VAR=valor.
+func isAssign(word string) bool {
+	eq := strings.IndexByte(word, '=')
+	if eq <= 0 {
+		return false
+	}
+	for i, c := range word[:eq] {
+		if c != '_' && !(c >= 'A' && c <= 'Z') && !(c >= 'a' && c <= 'z') && !(i > 0 && c >= '0' && c <= '9') {
+			return false
+		}
+	}
+	return true
 }
 
 // Encode valida e serializa o evento.

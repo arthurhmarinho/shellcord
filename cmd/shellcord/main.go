@@ -23,6 +23,9 @@ comandos:
   daemon   mantém a conexão com o Discord e publica a presença
   send     manda um evento ao daemon (sobe o daemon se precisar)
   hook     usado pelos hooks do Claude Code: "shellcord hook claude"
+  init     imprime a integração com o shell: "shellcord init fish | source"
+  away     avisa que você saiu (para o swayidle); o card some
+  back     avisa que você voltou (para o swayidle)
 
 Use "shellcord <comando> -h" para ver as opções.
 `
@@ -40,6 +43,10 @@ func main() {
 		err = runSend(os.Args[2:])
 	case "hook":
 		runHook(os.Args[2:]) // nunca retorna: sai sempre com 0
+	case "init":
+		err = runInit(os.Args[2:])
+	case "away", "back":
+		err = runPresence(os.Args[1], os.Args[2:])
 	case "-h", "--help", "help":
 		fmt.Print(usage)
 		return

@@ -61,6 +61,7 @@ type source struct {
 type Store struct {
 	opt     Options
 	sources map[string]*source
+	away    bool // o usuário está ausente (ADR-0019)
 }
 
 // New cria um Store vazio.
@@ -73,6 +74,10 @@ func (s *Store) Len() int { return len(s.sources) }
 
 // Apply incorpora um evento já validado.
 func (s *Store) Apply(e event.Event, now time.Time) {
+	if e.Src == event.SourceSystem {
+		s.away = e.Kind == event.KindAway
+		return
+	}
 	key := e.Key()
 	if e.Kind == event.KindEnd {
 		delete(s.sources, key)
@@ -141,6 +146,11 @@ func (s *Store) Summary(now time.Time) Summary {
 	for _, src := range s.sources {
 		lv := src.level
 		if waiting(lv) && s.opt.IdleTimeout > 0 && now.Sub(src.since) > s.opt.IdleTimeout {
+			lv = LevelNone
+		}
+		// Ausente, só o Claude Code trabalhando continua: ele está mesmo
+		// trabalhando, e o resto seria um terminal esquecido aberto.
+		if s.away && lv != LevelClaudeBusy {
 			lv = LevelNone
 		}
 		if lv == LevelNone || lv < sum.Level {

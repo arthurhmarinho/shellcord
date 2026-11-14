@@ -46,3 +46,7 @@ hook do fish ou do Claude Code, não consegue manter a presença. Além disso, d
   `/bin/true`. O custo próprio é de uns 1,4 ms. Na primeira rodada, com a CPU fria,
   tudo levou de 3 a 4 vezes mais (`send` chegou a 10,5 ms). Repetir a medição dentro do
   fish na fase 4.
+- 2026-11-14, fase 4, dentro do fish 4.9.3 (handlers disparados com `emit`, 200
+  repetições): o handler de `fish_preexec` leva 2,6 ms e o de `fish_postexec` 2,5 ms,
+  contra 0,7 ms de um `command true` no mesmo loop. Cada comando ganha uns 2 ms no
+  início e outros 2 ms no fim. O gatilho de 10 ms não foi atingido.

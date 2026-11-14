@@ -46,8 +46,10 @@ Quando o Claude Code está trabalhando, ele passa na frente:
 └─────────────────────────────────────────────┘
 ```
 
-E quando você vai tomar café, ele some sozinho: com o terminal parado no prompt por
-alguns minutos, o card sai do perfil.
+E quando você vai tomar café, ele some sozinho. Com o `swayidle` avisando que ninguém
+mexe no teclado há 10 minutos, o card sai do perfil, mesmo com um `htop` esquecido
+aberto. Só o Claude Code trabalhando continua aparecendo, porque ele está mesmo
+trabalhando.
 
 ## Como funciona
 
@@ -130,7 +132,8 @@ O projeto está no começo. Por fase:
       limpeza por inatividade. Já dá para mandar eventos à mão com `shellcord send`.
 - [x] **Fase 3:** hooks do Claude Code, com várias sessões ao mesmo tempo
       (`shellcord hook claude`).
-- [ ] **Fase 4:** integração com o fish.
+- [x] **Fase 4:** integração com o fish (`shellcord init fish | source`) e ausência
+      via `swayidle` (`shellcord away` / `shellcord back`).
 - [ ] **Fase 5:** config TOML com allowlist e pastas ignoradas.
 - [ ] **Fase 6:** `exec` no sway, script de instalação e um `shellcord doctor`.
 

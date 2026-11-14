@@ -7,12 +7,36 @@ func TestProgName(t *testing.T) {
 		"nvim main.go":                  "nvim",
 		"/usr/bin/git push origin main": "git",
 		"  ./build.sh --release ":       "build.sh",
+		"sudo nvim /etc/fstab":          "nvim",
+		"sudo -u postgres psql":         "psql",
+		"sudo -E -- make install":       "make",
+		"doas -u root vi x":             "vi",
+		"env FOO=1 BAR=2 cargo build":   "cargo",
+		"env -u HOME go test":           "go",
+		"FOO=1 cargo run":               "cargo",
+		"time nice -n 10 make -j8":      "make",
+		"nohup command ./server &":      "server",
+		"exec nvim":                     "nvim",
+		"ls; echo x":                    "ls",
+		"cat a | grep b":                "cat",
+		"sudo":                          "sudo",
+		"sudo -i":                       "sudo",
+		"FOO=1":                         "",
 		"":                              "",
 		"   ":                           "",
 	}
 	for in, want := range cases {
 		if got := ProgName(in); got != want {
 			t.Errorf("ProgName(%q) = %q, quero %q", in, got, want)
+		}
+	}
+}
+
+func TestProgNameIdempotent(t *testing.T) {
+	for _, in := range []string{"sudo nvim", "env", "FOO=1 x", "a=b", "-x", "time"} {
+		p := ProgName(in)
+		if ProgName(p) != p {
+			t.Errorf("ProgName(%q) = %q não é estável: ProgName(%q) = %q", in, p, p, ProgName(p))
 		}
 	}
 }
@@ -44,6 +68,9 @@ func TestValidateRejects(t *testing.T) {
 		{V: 1, Src: SourceClaude, ID: "s", Kind: KindExec},                // tipo do fish
 		{V: 1, Src: SourceClaude, ID: "s", Kind: KindIdle, Tool: "Bash"},  // tool sem busy
 		{V: 1, Src: SourceFish, PID: 1, Kind: KindExec, Prog: "x", Tool: "Bash"},
+		{V: 1, Src: SourceSystem, Kind: KindIdle},
+		{V: 1, Src: SourceSystem, Kind: KindAway, Cwd: "/x"},
+		{V: 1, Src: SourceFish, PID: 1, Kind: KindAway},
 	}
 	for _, e := range bad {
 		if e.Validate() == nil {

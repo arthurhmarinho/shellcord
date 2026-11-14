@@ -89,6 +89,31 @@ func TestToolChangesKeepTimer(t *testing.T) {
 	}
 }
 
+func TestAwayHidesAllButClaudeBusy(t *testing.T) {
+	sys := func(k event.Kind) event.Event { return event.Event{V: 1, Src: event.SourceSystem, Kind: k} }
+	s := newStore(nil)
+	s.Apply(fish(1, event.KindExec, "htop", "/a"), at(0))
+	s.Apply(sys(event.KindAway), at(1))
+	if got := s.Summary(at(2)); got.Level != LevelNone {
+		t.Fatalf("ausente, o htop esquecido deveria sumir: %+v", got)
+	}
+	s.Apply(claudeTool("c", "Edit"), at(3))
+	if got := s.Summary(at(4)); got.Level != LevelClaudeBusy {
+		t.Fatalf("ausente, o Claude trabalhando continua: %+v", got)
+	}
+	s.Apply(claude("c", 0, event.KindIdle, ""), at(5))
+	if got := s.Summary(at(6)); got.Level != LevelNone {
+		t.Fatalf("ausente, o Claude esperando some: %+v", got)
+	}
+	s.Apply(sys(event.KindBack), at(7))
+	if got := s.Summary(at(8)); got.Level != LevelShellExec || !got.Since.Equal(at(0)) {
+		t.Fatalf("de volta, o htop reaparece com o cronômetro original: %+v", got)
+	}
+	if s.Len() != 2 {
+		t.Fatalf("away/back não são fontes: len=%d", s.Len())
+	}
+}
+
 func TestClaudeIdleTimeout(t *testing.T) {
 	s := newStore(nil)
 	s.Apply(claude("s", 0, event.KindIdle, "/p"), at(0))

@@ -48,3 +48,16 @@ func TestClaudeEventBadJSON(t *testing.T) {
 		t.Fatal("JSON inválido deveria dar erro")
 	}
 }
+
+func TestFishQuote(t *testing.T) {
+	cases := map[string]string{
+		"/home/a/go/bin/shellcord": `'/home/a/go/bin/shellcord'`,
+		`/tmp/it's here`:           `'/tmp/it\'s here'`,
+		`/tmp/a\b`:                 `'/tmp/a\\b'`,
+	}
+	for in, want := range cases {
+		if got := fishQuote(in); got != want {
+			t.Errorf("fishQuote(%q) = %s, quero %s", in, got, want)
+		}
+	}
+}

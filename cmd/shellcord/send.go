@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"net"
 	"os"
 	"os/exec"
@@ -22,7 +23,7 @@ func runSend(args []string) error {
 	fs := flag.NewFlagSet("send", flag.ContinueOnError)
 	src := fs.String("src", "", "fonte: fish ou claude")
 	kind := fs.String("kind", "", "tipo: exec, idle, busy ou end")
-	prog := fs.String("prog", "", "linha de comando; só o nome do programa é enviado")
+	prog := fs.String("prog", "", "linha de comando; só o nome do programa é enviado (padrão: $SHELLCORD_CMDLINE)")
 	cwd := fs.String("cwd", "", "pasta da fonte (padrão: a atual)")
 	id := fs.String("id", "", "session_id do Claude Code")
 	tool := fs.String("tool", "", "tool_name em uso pelo Claude Code (com -kind busy)")
@@ -31,6 +32,9 @@ func runSend(args []string) error {
 		return err
 	}
 
+	if *prog == "" {
+		*prog = os.Getenv("SHELLCORD_CMDLINE")
+	}
 	e := event.Event{
 		V: event.Version, Src: event.Source(*src), Kind: event.Kind(*kind),
 		ID: *id, Prog: event.ProgName(*prog), Tool: *tool, Cwd: *cwd,
@@ -38,8 +42,23 @@ func runSend(args []string) error {
 	if e.Cwd == "" {
 		e.Cwd, _ = os.Getwd()
 	}
+	if e.Kind == event.KindExec && e.Prog == "" {
+		return nil // só atribuições (ex.: "FOO=1"): não há programa a mostrar
+	}
 	fillPID(&e, *pid)
 	b, err := event.Encode(e)
+	if err != nil {
+		return err
+	}
+	return send(b)
+}
+
+// runPresence trata "shellcord away" e "shellcord back" (ADR-0019).
+func runPresence(kind string, args []string) error {
+	if len(args) != 0 {
+		return fmt.Errorf("uso: shellcord %s", kind)
+	}
+	b, err := event.Encode(event.Event{V: event.Version, Src: event.SourceSystem, Kind: event.Kind(kind)})
 	if err != nil {
 		return err
 	}
@@ -59,6 +78,9 @@ func fillPID(e *event.Event, pid int) {
 		if st, err := proc.FindAncestor(os.Getppid(), claudeComm, 8); err == nil {
 			e.PID, e.Start = st.PID, st.Start
 		}
+		return
+	}
+	if e.PID <= 0 {
 		return
 	}
 	if st, err := proc.Read(e.PID); err == nil {
