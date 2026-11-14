@@ -8,16 +8,6 @@ import (
 	"github.com/arthurhmarinho/shellcord/internal/state"
 )
 
-// defaultAllow é a allowlist provisória de programas (ADR-0005). Fora dela, o
-// card mostra só "No terminal". A fase 5 move isto para a config TOML.
-var defaultAllow = map[string]bool{
-	"nvim": true, "vim": true, "hx": true, "nano": true,
-	"git": true, "lazygit": true,
-	"go": true, "cargo": true, "make": true,
-	"npm": true, "pnpm": true, "node": true, "python": true, "python3": true,
-	"docker": true, "htop": true, "btop": true, "man": true,
-}
-
 // claudeVerbs traduz o tool_name do Claude Code no que aparece no card
 // (ADR-0015). Ferramentas fora da tabela, inclusive as de MCP, viram
 // "trabalhando": o nome delas nunca chega ao Discord.

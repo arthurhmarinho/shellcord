@@ -24,6 +24,7 @@ comandos:
   send     manda um evento ao daemon (sobe o daemon se precisar)
   hook     usado pelos hooks do Claude Code: "shellcord hook claude"
   init     imprime a integração com o shell: "shellcord init fish | source"
+  config   valida e mostra a config: "shellcord config check"
   away     avisa que você saiu (para o swayidle); o card some
   back     avisa que você voltou (para o swayidle)
 
@@ -45,6 +46,8 @@ func main() {
 		runHook(os.Args[2:]) // nunca retorna: sai sempre com 0
 	case "init":
 		err = runInit(os.Args[2:])
+	case "config":
+		err = runConfig(os.Args[2:])
 	case "away", "back":
 		err = runPresence(os.Args[1], os.Args[2:])
 	case "-h", "--help", "help":

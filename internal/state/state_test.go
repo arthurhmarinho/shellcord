@@ -114,6 +114,24 @@ func TestAwayHidesAllButClaudeBusy(t *testing.T) {
 	}
 }
 
+func TestIgnoredDirHidesWholeSource(t *testing.T) {
+	s := newStore(nil)
+	s.Configure(10*time.Minute, func(cwd string) bool { return cwd == "/segredo" })
+	s.Apply(claudeTool("c", "Edit"), at(0)) // cwd /p
+	s.Apply(fish(1, event.KindExec, "nvim", "/segredo"), at(1))
+	if got := s.Summary(at(2)); got.Level != LevelClaudeBusy || got.Count != 1 {
+		t.Fatalf("a fonte na pasta ignorada não entra nem na contagem: %+v", got)
+	}
+	s.Apply(event.Event{V: 1, Src: event.SourceClaude, ID: "d", Kind: event.KindBusy, Cwd: "/segredo"}, at(0))
+	if got := s.Summary(at(3)); got.Count != 1 || got.Cwd != "/p" {
+		t.Fatalf("a sessão ignorada, mesmo mais antiga, não aparece: %+v", got)
+	}
+	s.Apply(claude("c", 0, event.KindEnd, ""), at(4))
+	if got := s.Summary(at(5)); got.Level != LevelNone {
+		t.Fatalf("só sobraram fontes ignoradas: %+v", got)
+	}
+}
+
 func TestClaudeIdleTimeout(t *testing.T) {
 	s := newStore(nil)
 	s.Apply(claude("s", 0, event.KindIdle, "/p"), at(0))

@@ -33,6 +33,8 @@ type Options struct {
 	IdleTimeout time.Duration
 	// Alive diz se o processo da fonte continua vivo (normalmente proc.Alive).
 	Alive func(pid int, start uint64) bool
+	// Ignored diz se a pasta é ignorada: a fonte nela não aparece (ADR-0020).
+	Ignored func(cwd string) bool
 }
 
 // Summary é o que deve aparecer no card.
@@ -67,6 +69,12 @@ type Store struct {
 // New cria um Store vazio.
 func New(opt Options) *Store {
 	return &Store{opt: opt, sources: make(map[string]*source)}
+}
+
+// Configure troca as opções que vêm da config, que pode ser relida a qualquer
+// momento.
+func (s *Store) Configure(idle time.Duration, ignored func(cwd string) bool) {
+	s.opt.IdleTimeout, s.opt.Ignored = idle, ignored
 }
 
 // Len devolve o número de fontes conhecidas.
@@ -144,6 +152,9 @@ func (s *Store) Summary(now time.Time) Summary {
 	var sum Summary
 	var oldest *source
 	for _, src := range s.sources {
+		if s.opt.Ignored != nil && s.opt.Ignored(src.cwd) {
+			continue
+		}
 		lv := src.level
 		if waiting(lv) && s.opt.IdleTimeout > 0 && now.Sub(src.since) > s.opt.IdleTimeout {
 			lv = LevelNone

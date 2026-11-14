@@ -27,3 +27,4 @@ Para mudar uma decisão, crie um ADR novo que substitua o antigo e marque o anti
 | 0017 | [Integração com o fish via `shellcord init fish`](0017-integracao-com-o-fish.md) | Aceito |
 | 0018 | [Desembrulhar wrappers no nome do programa](0018-desembrulhar-wrappers.md) | Aceito |
 | 0019 | [Ausência do usuário via swayidle](0019-ausencia-via-swayidle.md) | Aceito |
+| 0020 | [Config TOML: leitura, releitura e falha fechada](0020-config-toml.md) | Aceito |

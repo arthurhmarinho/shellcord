@@ -15,6 +15,50 @@ import (
 	"github.com/arthurhmarinho/shellcord/internal/state"
 )
 
+func TestConfigFailClosedAndReload(t *testing.T) {
+	srv := discordtest.New(t, "123")
+	dir := t.TempDir()
+	confPath := dir + "/config.toml"
+	if err := os.WriteFile(confPath, []byte(`ignore_dir = ["/h"]`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg := Config{ClientID: "123", ConfigPath: confPath, Dir: dir, DiscordDirs: []string{srv.Dir}, Home: "/h",
+		Window: 100 * time.Millisecond, Check: 50 * time.Millisecond, Log: Discard}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go Run(ctx, cfg)
+	waitSocket(t, dir)
+
+	me, _ := proc.Read(os.Getpid())
+	ev := func(cwd string) event.Event {
+		return event.Event{V: 1, Src: event.SourceFish, PID: me.PID, Start: me.Start, Kind: event.KindExec, Prog: "nvim", Cwd: cwd}
+	}
+	send(t, dir, ev("/h/publico"))
+	srv.NoActivity(t, 400*time.Millisecond) // config inválida: falha fechado
+
+	// Corrige a config (tamanho diferente garante que a mudança é notada).
+	if err := os.WriteFile(confPath, []byte(`ignore_dirs = ["~/segredo"]`+"\nallow = [\"nvim\"]\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := srv.NextActivity(t, 2*time.Second); !strings.Contains(got, "Rodando nvim") {
+		t.Fatalf("com a config corrigida o card deveria aparecer: %s", got)
+	}
+	send(t, dir, ev("/h/segredo/projeto"))
+	if got := srv.NextActivity(t, 2*time.Second); got != "null" {
+		t.Fatalf("na pasta ignorada a fonte some: %s", got)
+	}
+
+	// Uma config inválida depois de uma válida mantém a anterior.
+	if err := os.WriteFile(confPath, []byte(`isso não é toml, e é bem mais comprido`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(300 * time.Millisecond) // várias checagens: a config inválida já foi lida
+	send(t, dir, ev("/h/publico"))
+	if got := srv.NextActivity(t, 2*time.Second); !strings.Contains(got, "Rodando nvim") {
+		t.Fatalf("config inválida numa releitura mantém a anterior: %s", got)
+	}
+}
+
 func TestRender(t *testing.T) {
 	since := time.Unix(1000, 0)
 	allow := map[string]bool{"nvim": true}
@@ -78,7 +122,7 @@ func waitSocket(t *testing.T, dir string) {
 func TestEndToEnd(t *testing.T) {
 	srv := discordtest.New(t, "123")
 	dir := t.TempDir()
-	cfg := Config{ClientID: "123", Dir: dir, DiscordDirs: []string{srv.Dir}, Home: "/h",
+	cfg := Config{ClientID: "123", ConfigPath: dir + "/sem-config.toml", Dir: dir, DiscordDirs: []string{srv.Dir}, Home: "/h",
 		Window: 300 * time.Millisecond, Check: 50 * time.Millisecond, Log: Discard}
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)

@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/arthurhmarinho/shellcord/internal/config"
 	"github.com/arthurhmarinho/shellcord/internal/discord"
 	"github.com/arthurhmarinho/shellcord/internal/event"
 	"github.com/arthurhmarinho/shellcord/internal/proc"
@@ -28,17 +29,20 @@ var ErrRunning = errors.New("daemon já está rodando")
 // Config configura o daemon. Campos zerados recebem os padrões.
 type Config struct {
 	ClientID    string
+	ConfigPath  string        // padrão: config.Path()
 	Dir         string        // padrão: RuntimeDir()
 	DiscordDirs []string      // padrão: discord.DefaultDirs()
 	Home        string        // padrão: os.UserHomeDir()
 	Window      time.Duration // intervalo mínimo entre SET_ACTIVITY; padrão 15 s
 	Check       time.Duration // intervalo da checagem periódica; padrão 15 s
-	IdleTimeout time.Duration // shell parado some depois disso; padrão 10 min
 	SourceTTL   time.Duration // fonte sem PID expira depois disso; padrão 10 min
 	Log         *log.Logger   // padrão: stderr
 }
 
 func (c *Config) setDefaults() {
+	if c.ConfigPath == "" {
+		c.ConfigPath = config.Path()
+	}
 	if c.Dir == "" {
 		c.Dir = RuntimeDir()
 	}
@@ -53,9 +57,6 @@ func (c *Config) setDefaults() {
 	}
 	if c.Check == 0 {
 		c.Check = 15 * time.Second
-	}
-	if c.IdleTimeout == 0 {
-		c.IdleTimeout = 10 * time.Minute
 	}
 	if c.SourceTTL == 0 {
 		c.SourceTTL = 10 * time.Minute
@@ -116,7 +117,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	l := &loop{
 		cfg:   cfg,
-		store: state.New(state.Options{TTL: cfg.SourceTTL, IdleTimeout: cfg.IdleTimeout, Alive: proc.Alive}),
+		store: state.New(state.Options{TTL: cfg.SourceTTL, Alive: proc.Alive}),
 	}
 	cfg.Log.Printf("ouvindo em %s", sock)
 	return l.run(ctx, events, readErr)
@@ -157,6 +158,11 @@ type loop struct {
 	client     *discord.Client
 	clientDone <-chan struct{} // nil enquanto desconectado
 
+	conf      config.Config
+	allow     map[string]bool
+	confOK    bool   // há uma config válida; sem ela, nada é publicado (ADR-0020)
+	confStamp string // data de modificação e tamanho da última leitura
+
 	sent      *discord.Activity // o que o Discord está mostrando
 	sentValid bool              // false força reenviar (ex.: depois de reconectar)
 	lastSend  time.Time
@@ -174,6 +180,7 @@ func (l *loop) run(ctx context.Context, events <-chan event.Event, readErr <-cha
 	l.timer = time.NewTimer(time.Hour)
 	l.timer.Stop()
 	l.backoff = backoffMin
+	l.reloadConfig()
 	defer func() {
 		if l.client != nil {
 			l.client.Close()
@@ -190,6 +197,7 @@ func (l *loop) run(ctx context.Context, events <-chan event.Event, readErr <-cha
 			l.store.Apply(e, time.Now())
 			l.flush(time.Now())
 		case <-ticker.C:
+			l.reloadConfig()
 			l.flush(time.Now())
 		case <-l.timer.C:
 			l.timerArmed = false
@@ -207,7 +215,10 @@ func (l *loop) run(ctx context.Context, events <-chan event.Event, readErr <-cha
 // é enviado quando ela libera (ADR-0003).
 func (l *loop) flush(now time.Time) {
 	l.store.Prune(now)
-	want := render(l.store.Summary(now), l.cfg.Home, defaultAllow)
+	var want *discord.Activity
+	if l.confOK {
+		want = render(l.store.Summary(now), l.cfg.Home, l.allow)
+	}
 	if l.sentValid && reflect.DeepEqual(want, l.sent) {
 		return
 	}
@@ -236,6 +247,41 @@ func (l *loop) flush(now time.Time) {
 		l.cfg.Log.Print("card: limpo")
 	} else {
 		l.cfg.Log.Printf("card: %q / %q", want.Details, want.State)
+	}
+}
+
+// reloadConfig relê a config se o arquivo mudou (data de modificação ou
+// tamanho). Com a config inválida, mantém a última válida; se nunca houve uma,
+// nada é publicado até corrigir (ADR-0020).
+func (l *loop) reloadConfig() {
+	var stamp string
+	switch st, err := os.Stat(l.cfg.ConfigPath); {
+	case err == nil:
+		stamp = fmt.Sprint(st.ModTime().UnixNano(), "/", st.Size())
+	case errors.Is(err, os.ErrNotExist):
+		stamp = "ausente"
+	default:
+		stamp = "erro: " + err.Error()
+	}
+	if stamp == l.confStamp {
+		return
+	}
+	l.confStamp = stamp
+	c, err := config.Load(l.cfg.ConfigPath, l.cfg.Home)
+	if err != nil {
+		if l.confOK {
+			l.cfg.Log.Printf("config inválida, mantendo a anterior: %v", err)
+		} else {
+			l.cfg.Log.Printf("config inválida, nada será publicado até corrigir: %v", err)
+		}
+		return
+	}
+	l.conf, l.allow, l.confOK = c, c.AllowSet(), true
+	l.store.Configure(c.IdleTimeout, c.Ignored)
+	if stamp == "ausente" {
+		l.cfg.Log.Print("config: sem arquivo, usando o padrão")
+	} else {
+		l.cfg.Log.Printf("config carregada de %s", l.cfg.ConfigPath)
 	}
 }
 

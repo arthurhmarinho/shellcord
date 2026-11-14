@@ -97,19 +97,26 @@ Seu perfil é público. Seu histórico de comandos não deveria ser.
   `/home/você/clientes/projeto-secreto/shellcord`), e as pastas da lista de ignoradas
   não aparecem de jeito nenhum.
 
-A config vai morar em `~/.config/shellcord/config.toml`. Um esboço do formato (ainda não
-implementado, isso é a fase 5):
+A config fica em `~/.config/shellcord/config.toml`. Ela é opcional: sem o arquivo,
+valem os padrões. Para começar, use `shellcord config default > ~/.config/shellcord/config.toml`.
 
 ```toml
-# Programas que podem aparecer pelo nome. O resto vira "no terminal".
+# Programas que podem aparecer pelo nome. O resto vira "No terminal".
+# Esta lista SUBSTITUI a padrão: copie o que quiser manter.
 allow = ["nvim", "cargo", "go", "git", "make", "htop"]
 
-# Pastas que nunca aparecem (nem o nome, nem nada dentro delas).
+# Pastas que nunca aparecem: um terminal ou sessão do Claude Code dentro delas
+# (ou de uma subpasta) não entra no card de jeito nenhum.
 ignore_dirs = ["~/Documentos/financeiro", "~/clientes"]
 
-# Minutos com o shell parado no prompt até o card sumir.
+# Minutos com o shell parado, ou o Claude Code esperando você, até o card sumir.
 idle_minutes = 10
 ```
+
+O daemon relê o arquivo em até 15 s depois de salvo. Se a config tiver um erro, como
+uma chave digitada errado, ele **não publica nada** até ela ser corrigida, em vez de
+seguir com os padrões e mostrar uma pasta que você mandou esconder. Para validar antes
+de salvar de vez, use `shellcord config check`.
 
 ## Discord Flatpak? Funciona
 
@@ -134,7 +141,8 @@ O projeto está no começo. Por fase:
       (`shellcord hook claude`).
 - [x] **Fase 4:** integração com o fish (`shellcord init fish | source`) e ausência
       via `swayidle` (`shellcord away` / `shellcord back`).
-- [ ] **Fase 5:** config TOML com allowlist e pastas ignoradas.
+- [x] **Fase 5:** config TOML com allowlist, pastas ignoradas e releitura automática
+      (`shellcord config check`).
 - [ ] **Fase 6:** `exec` no sway, script de instalação e um `shellcord doctor`.
 
 ## Instalação
