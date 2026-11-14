@@ -121,6 +121,13 @@ func TestRender(t *testing.T) {
 	if a := render(cases[0].sum, "/h", allow); a.Assets == nil || a.Assets.LargeImage != cardImage {
 		t.Errorf("o card deveria levar a imagem %q: %+v", cardImage, a.Assets)
 	}
+	for _, c := range cases {
+		a := render(c.sum, "/h", allow)
+		claude := c.sum.Level == state.LevelClaudeBusy || c.sum.Level == state.LevelClaudeIdle
+		if (a.Assets.SmallImage == claudeImage) != claude {
+			t.Errorf("%+v: imagem pequena do Claude só nos níveis do Claude, veio %q", c.sum, a.Assets.SmallImage)
+		}
+	}
 	if render(state.Summary{}, "/h", allow) != nil {
 		t.Error("nível nenhum deveria limpar a presença")
 	}

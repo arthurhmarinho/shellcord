@@ -49,6 +49,8 @@ type Timestamps struct {
 type Assets struct {
 	LargeImage string `json:"large_image,omitempty"`
 	LargeText  string `json:"large_text,omitempty"`
+	SmallImage string `json:"small_image,omitempty"` // círculo no canto da imagem grande
+	SmallText  string `json:"small_text,omitempty"`
 }
 
 // DefaultDirs são os diretórios onde procurar discord-ipc-N: o padrão e o do

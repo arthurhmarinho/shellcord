@@ -31,6 +31,9 @@ func claudeVerb(tool string) string {
 // não existir lá, e o Discord mostra o card sem imagem.
 const cardImage = "logo-1"
 
+// claudeImage é o círculo pequeno sobreposto ao card nos níveis do Claude Code.
+const claudeImage = "claude"
+
 // maxField é o limite do Discord para details e state.
 const maxField = 128
 
@@ -62,6 +65,9 @@ func render(s state.Summary, home string, allow map[string]bool) *discord.Activi
 		Details:    truncate(details),
 		Timestamps: &discord.Timestamps{Start: s.Since.Unix()},
 		Assets:     &discord.Assets{LargeImage: cardImage, LargeText: "shellcord"},
+	}
+	if s.Level == state.LevelClaudeBusy || s.Level == state.LevelClaudeIdle {
+		a.Assets.SmallImage, a.Assets.SmallText = claudeImage, "Claude Code"
 	}
 	if dir := dirName(s.Cwd, home); dir != "" {
 		a.State = truncate("em " + dir)
