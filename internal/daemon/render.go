@@ -26,6 +26,11 @@ func claudeVerb(tool string) string {
 	return "trabalhando"
 }
 
+// cardImage é a chave da imagem em Rich Presence → Art Assets da aplicação do
+// Discord (ADR-0013). Com SHELLCORD_CLIENT_ID de outra aplicação, a chave pode
+// não existir lá, e o Discord mostra o card sem imagem.
+const cardImage = "logo-1"
+
 // maxField é o limite do Discord para details e state.
 const maxField = 128
 
@@ -56,6 +61,7 @@ func render(s state.Summary, home string, allow map[string]bool) *discord.Activi
 	a := &discord.Activity{
 		Details:    truncate(details),
 		Timestamps: &discord.Timestamps{Start: s.Since.Unix()},
+		Assets:     &discord.Assets{LargeImage: cardImage, LargeText: "shellcord"},
 	}
 	if dir := dirName(s.Cwd, home); dir != "" {
 		a.State = truncate("em " + dir)

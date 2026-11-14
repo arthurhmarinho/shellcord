@@ -131,7 +131,7 @@ usuário para instalar.
 
 ## Status
 
-O projeto está no começo. Por fase:
+As seis fases do plano inicial estão feitas:
 
 - [x] **Fase 1:** prova de conceito. Handshake e `SET_ACTIVITY` pelo socket do Flatpak,
       com o card aparecendo no perfil.
@@ -143,23 +143,40 @@ O projeto está no começo. Por fase:
       via `swayidle` (`shellcord away` / `shellcord back`).
 - [x] **Fase 5:** config TOML com allowlist, pastas ignoradas e releitura automática
       (`shellcord config check`).
-- [ ] **Fase 6:** `exec` no sway, script de instalação e um `shellcord doctor`.
+- [x] **Fase 6:** `shellcord install`/`uninstall` com diff, `shellcord doctor` e o daemon
+      que se reinicia sozinho quando o binário é atualizado.
 
 ## Instalação
 
-*Ainda não tem.* Quando a fase 6 chegar, a ideia é esta:
+Precisa de Go 1.27 ou mais novo e do Discord aberto (nativo ou Flatpak).
 
 ```fish
-go install github.com/arthurhmarinho/shellcord@latest
-shellcord install   # hooks do fish e do Claude Code, mostrando o diff antes
+go install github.com/arthurhmarinho/shellcord/cmd/shellcord@latest
+~/go/bin/shellcord install
 ```
 
-Mais uma linha no config do sway (o cliente também sobe o daemon sozinho se ele não
-estiver rodando):
+O `install` mexe em três arquivos e **mostra o diff de cada um antes de perguntar**:
 
+| Alvo | Arquivo | O que entra |
+|---|---|---|
+| `claude` | `~/.claude/settings.json` | os 7 hooks, todos chamando `shellcord hook claude`. O resto do arquivo fica como está, na mesma ordem. |
+| `fish` | `~/.config/fish/config.fish` | um bloco com `shellcord init fish \| source` |
+| `sway` | `~/.config/sway/config` | um bloco com `exec shellcord daemon` e o `swayidle` chamando `away`/`back` |
+
+Cada alvo pode ser instalado sozinho (`shellcord install fish`), e `-dry-run` só mostra o
+diff. Os blocos ficam entre marcadores `# >>> shellcord >>>`, e o original de cada
+arquivo alterado vai para `<arquivo>.shellcord.bak`. Uma integração que você já fez à
+mão é reconhecida e não é duplicada. As integrações usam o caminho absoluto do binário,
+então o `~/go/bin` não precisa estar no PATH. Para desfazer, use `shellcord uninstall`.
+
+Para conferir se está tudo de pé (Discord, daemon, config e integrações):
+
+```fish
+~/go/bin/shellcord doctor
 ```
-exec shellcord daemon
-```
+
+Para atualizar, rode o `go install` de novo. O daemon percebe o binário novo em até
+30 s e se reinicia sozinho. O card pisca uma vez e volta no próximo comando ou hook.
 
 Não precisa criar nada no Discord Developer Portal: o binário já vem com o
 **Application ID** da aplicação "shellcord", que é o nome que aparece depois de

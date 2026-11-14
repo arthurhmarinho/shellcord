@@ -26,9 +26,14 @@ import (
 // ErrRunning indica que outro daemon já segura o lock.
 var ErrRunning = errors.New("daemon já está rodando")
 
+// ErrRestart indica que o executável foi trocado em disco (ex.: go install).
+// O daemon já liberou tudo; quem chamou deve se reexecutar (ADR-0021).
+var ErrRestart = errors.New("executável atualizado, reiniciando")
+
 // Config configura o daemon. Campos zerados recebem os padrões.
 type Config struct {
 	ClientID    string
+	Executable  string        // arquivo vigiado para reinício; vazio desliga
 	ConfigPath  string        // padrão: config.Path()
 	Dir         string        // padrão: RuntimeDir()
 	DiscordDirs []string      // padrão: discord.DefaultDirs()
@@ -158,6 +163,9 @@ type loop struct {
 	client     *discord.Client
 	clientDone <-chan struct{} // nil enquanto desconectado
 
+	exeStamp   string // identidade do executável ao subir
+	exeChanged string // identidade nova vista na checagem anterior
+
 	conf      config.Config
 	allow     map[string]bool
 	confOK    bool   // há uma config válida; sem ela, nada é publicado (ADR-0020)
@@ -180,6 +188,7 @@ func (l *loop) run(ctx context.Context, events <-chan event.Event, readErr <-cha
 	l.timer = time.NewTimer(time.Hour)
 	l.timer.Stop()
 	l.backoff = backoffMin
+	l.exeStamp = fileStamp(l.cfg.Executable)
 	l.reloadConfig()
 	defer func() {
 		if l.client != nil {
@@ -197,6 +206,10 @@ func (l *loop) run(ctx context.Context, events <-chan event.Event, readErr <-cha
 			l.store.Apply(e, time.Now())
 			l.flush(time.Now())
 		case <-ticker.C:
+			if l.exeUpdated() {
+				l.cfg.Log.Print(ErrRestart)
+				return ErrRestart
+			}
 			l.reloadConfig()
 			l.flush(time.Now())
 		case <-l.timer.C:
@@ -283,6 +296,42 @@ func (l *loop) reloadConfig() {
 	} else {
 		l.cfg.Log.Printf("config carregada de %s", l.cfg.ConfigPath)
 	}
+}
+
+// exeUpdated diz se o executável mudou em disco e ficou estável por duas
+// checagens seguidas, para não reexecutar um arquivo que ainda está sendo
+// escrito pelo go install.
+func (l *loop) exeUpdated() bool {
+	if l.cfg.Executable == "" {
+		return false
+	}
+	now := fileStamp(l.cfg.Executable)
+	if now == "" || now == l.exeStamp {
+		l.exeChanged = ""
+		return false
+	}
+	if now != l.exeChanged {
+		l.exeChanged = now
+		return false
+	}
+	return true
+}
+
+// fileStamp identifica a versão de um arquivo por inode, data de modificação e
+// tamanho. Devolve "" se o arquivo não existir.
+func fileStamp(path string) string {
+	if path == "" {
+		return ""
+	}
+	st, err := os.Stat(path)
+	if err != nil {
+		return ""
+	}
+	var ino uint64
+	if sys, ok := st.Sys().(*syscall.Stat_t); ok {
+		ino = sys.Ino
+	}
+	return fmt.Sprint(ino, "/", st.ModTime().UnixNano(), "/", st.Size())
 }
 
 // connect garante uma conexão, com backoff entre tentativas falhas.

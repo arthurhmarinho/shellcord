@@ -28,3 +28,7 @@ Para mudar uma decisão, crie um ADR novo que substitua o antigo e marque o anti
 | 0018 | [Desembrulhar wrappers no nome do programa](0018-desembrulhar-wrappers.md) | Aceito |
 | 0019 | [Ausência do usuário via swayidle](0019-ausencia-via-swayidle.md) | Aceito |
 | 0020 | [Config TOML: leitura, releitura e falha fechada](0020-config-toml.md) | Aceito |
+| 0021 | [O daemon se reexecuta quando o binário é atualizado](0021-daemon-vigia-o-executavel.md) | Aceito |
+| 0022 | [`shellcord install` e `uninstall` com diff e confirmação](0022-shellcord-install.md) | Aceito |
+| 0023 | [`shellcord doctor` só com fatos externos](0023-shellcord-doctor.md) | Aceito |
+| 0024 | [Distribuição via `go install`](0024-distribuicao-via-go-install.md) | Aceito |

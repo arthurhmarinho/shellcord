@@ -15,6 +15,42 @@ import (
 	"github.com/arthurhmarinho/shellcord/internal/state"
 )
 
+func TestRestartWhenExecutableChanges(t *testing.T) {
+	dir := t.TempDir()
+	exe := dir + "/shellcord"
+	if err := os.WriteFile(exe, []byte("v1"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cfg := Config{ClientID: "123", Executable: exe, ConfigPath: dir + "/c.toml", Dir: dir,
+		DiscordDirs: []string{t.TempDir()}, Check: 30 * time.Millisecond, Log: Discard}
+	done := make(chan error, 1)
+	go func() { done <- Run(context.Background(), cfg) }()
+	waitSocket(t, dir)
+
+	select {
+	case err := <-done:
+		t.Fatalf("saiu sem o executável mudar: %v", err)
+	case <-time.After(150 * time.Millisecond):
+	}
+	if err := os.WriteFile(exe+".novo", []byte("versão 2"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(exe+".novo", exe); err != nil { // como o go install faz
+		t.Fatal(err)
+	}
+	select {
+	case err := <-done:
+		if !errors.Is(err, ErrRestart) {
+			t.Fatalf("quero ErrRestart, veio %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("não percebeu o executável novo")
+	}
+	if _, err := os.Stat(SocketPath(dir)); !os.IsNotExist(err) {
+		t.Fatal("antes de reexecutar, o socket deveria ter sido removido")
+	}
+}
+
 func TestConfigFailClosedAndReload(t *testing.T) {
 	srv := discordtest.New(t, "123")
 	dir := t.TempDir()
@@ -81,6 +117,9 @@ func TestRender(t *testing.T) {
 		if a == nil || a.Details != c.details || a.State != c.state || a.Timestamps.Start != 1000 {
 			t.Errorf("render(%+v) = %+v, quero %q / %q", c.sum, a, c.details, c.state)
 		}
+	}
+	if a := render(cases[0].sum, "/h", allow); a.Assets == nil || a.Assets.LargeImage != cardImage {
+		t.Errorf("o card deveria levar a imagem %q: %+v", cardImage, a.Assets)
 	}
 	if render(state.Summary{}, "/h", allow) != nil {
 		t.Error("nível nenhum deveria limpar a presença")
