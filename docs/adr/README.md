@@ -32,3 +32,4 @@ Para mudar uma decisão, crie um ADR novo que substitua o antigo e marque o anti
 | 0022 | [`shellcord install` e `uninstall` com diff e confirmação](0022-shellcord-install.md) | Aceito |
 | 0023 | [`shellcord doctor` só com fatos externos](0023-shellcord-doctor.md) | Aceito |
 | 0024 | [Distribuição via `go install`](0024-distribuicao-via-go-install.md) | Aceito |
+| 0025 | [CI só de testes no GitHub Actions](0025-ci-de-testes.md) | Aceito |
